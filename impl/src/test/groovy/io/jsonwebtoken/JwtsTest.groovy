@@ -16,6 +16,7 @@
 package io.jsonwebtoken
 
 import io.jsonwebtoken.impl.DefaultHeader
+import io.jsonwebtoken.impl.DefaultJweHeader
 import io.jsonwebtoken.impl.DefaultJwsHeader
 import io.jsonwebtoken.impl.compression.DefaultCompressionCodecResolver
 import io.jsonwebtoken.impl.compression.GzipCompressionCodec
@@ -77,6 +78,19 @@ class JwtsTest {
         def header = Jwts.jwsHeader([alg: "HS256"])
         assertTrue header instanceof DefaultJwsHeader
         assertEquals header.getAlgorithm(), 'HS256'
+    }
+
+    @Test
+    void testJweHeaderWithNoArgs() {
+        def header = Jwts.jweHeader()
+        assertTrue header instanceof DefaultJweHeader
+    }
+
+    @Test
+    void testJweHeaderWithMapArg() {
+        def header = Jwts.jweHeader([enc: 'foo'])
+        assertTrue header instanceof DefaultJweHeader
+        assertEquals header.getEncryptionAlgorithm(), 'foo'
     }
 
     @Test
@@ -203,7 +217,6 @@ class JwtsTest {
     @Test
     void testWithInvalidCompressionAlgorithm() {
         try {
-
             Jwts.builder().setHeaderParam(Header.COMPRESSION_ALGORITHM, "CUSTOM").setId("andId").compact()
         } catch (CompressionException e) {
             assertEquals "Unsupported compression algorithm 'CUSTOM'", e.getMessage()
