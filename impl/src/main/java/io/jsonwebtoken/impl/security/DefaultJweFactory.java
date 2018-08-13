@@ -1,14 +1,12 @@
 package io.jsonwebtoken.impl.security;
 
-import io.jsonwebtoken.impl.DefaultJweHeader;
-import io.jsonwebtoken.security.EncryptionAlgorithms;
-import io.jsonwebtoken.Jwe;
 import io.jsonwebtoken.impl.io.RuntimeClasspathDeserializerLocator;
 import io.jsonwebtoken.io.Decoder;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.io.Deserializer;
 import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.EncryptionAlgorithm;
+import io.jsonwebtoken.security.EncryptionAlgorithms;
 
 import java.util.Map;
 

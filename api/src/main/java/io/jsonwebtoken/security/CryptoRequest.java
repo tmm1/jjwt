@@ -15,14 +15,16 @@
  */
 package io.jsonwebtoken.security;
 
-public interface CryptoRequest {
+import java.security.Key;
+
+public interface CryptoRequest<T extends Key> {
 
     /**
      * Returns the key to use for encryption or decryption depending on the type of request.
      *
      * @return the key to use for encryption or decryption depending on the type of request.
      */
-    byte[] getKey();
+    T getKey();
 
     /**
      * Returns the initialization vector to use during encryption or decryption depending on the type of request.

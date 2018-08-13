@@ -15,6 +15,8 @@
  */
 package io.jsonwebtoken.security;
 
-public interface AuthenticatedEncryptionRequest extends EncryptionRequest, AssociatedDataSource {
+import java.security.Key;
+
+public interface AuthenticatedEncryptionRequest<T extends Key> extends EncryptionRequest<T>, AssociatedDataSource {
 
 }

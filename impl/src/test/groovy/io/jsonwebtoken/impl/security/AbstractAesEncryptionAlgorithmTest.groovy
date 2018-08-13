@@ -3,6 +3,7 @@ package io.jsonwebtoken.impl.security
 import io.jsonwebtoken.security.*
 import org.junit.Test
 
+import javax.crypto.spec.SecretKeySpec
 import java.security.SecureRandom
 
 import static org.junit.Assert.*
@@ -13,7 +14,7 @@ class AbstractAesEncryptionAlgorithmTest {
     void testConstructorWithIvLargerThanAesBlockSize() {
 
         try {
-            new TestAesEncryptionAlgorithm('foo', 'foo', 17, 16);
+            new TestAesEncryptionAlgorithm('foo', 'foo', 136, 128)
             fail()
         } catch (IllegalArgumentException expected) {
         }
@@ -23,7 +24,7 @@ class AbstractAesEncryptionAlgorithmTest {
     void testConstructorWithoutIvLength() {
 
         try {
-            new TestAesEncryptionAlgorithm('foo', 'foo', 0, 16);
+            new TestAesEncryptionAlgorithm('foo', 'foo', 0, 128)
             fail()
         } catch (IllegalArgumentException expected) {
         }
@@ -33,7 +34,7 @@ class AbstractAesEncryptionAlgorithmTest {
     void testConstructorWithoutRequiredKeyLength() {
 
         try {
-            new TestAesEncryptionAlgorithm('foo', 'foo', 16, 0);
+            new TestAesEncryptionAlgorithm('foo', 'foo', 128, 0)
             fail()
         } catch (IllegalArgumentException expected) {
         }
@@ -42,17 +43,17 @@ class AbstractAesEncryptionAlgorithmTest {
     @Test
     void testDoEncryptFailure() {
 
-        def alg = new TestAesEncryptionAlgorithm('foo', 'foo', 16, 16) {
+        def alg = new TestAesEncryptionAlgorithm('foo', 'foo', 128, 128) {
             @Override
             protected EncryptionResult doEncrypt(EncryptionRequest req) throws Exception {
                 throw new IllegalArgumentException('broken')
             }
         }
 
-        def req = EncryptionRequests.builder()
+        def req = EncryptionRequests.symmetric()
                 .setAdditionalAuthenticatedData('foo'.getBytes())
                 .setInitializationVector('iv'.getBytes())
-                .setKey(alg.generateKey().getEncoded())
+                .setKey(alg.generateKey())
                 .setPlaintext('bar'.getBytes())
                 .build();
 
@@ -69,13 +70,13 @@ class AbstractAesEncryptionAlgorithmTest {
 
         def requiredKeyLength = 16
 
-        def alg = new TestAesEncryptionAlgorithm('foo', 'foo', 16, requiredKeyLength)
+        def alg = new TestAesEncryptionAlgorithm('foo', 'foo', 128, requiredKeyLength)
 
-        byte[] bytes = new byte[requiredKeyLength + 1] //not same as requiredKeyLength, but it should be
-        AbstractAesEncryptionAlgorithm.DEFAULT_RANDOM.nextBytes(bytes)
+        byte[] bytes = new byte[requiredKeyLength + 1] //not same as requiredKeyByteLength, but it should be
+        Randoms.secureRandom().nextBytes(bytes)
 
         try {
-            alg.assertKeyLength(bytes)
+            alg.assertKeyLength(new SecretKeySpec(bytes, "AES"))
             fail()
         } catch (CryptoException expected) {
         }
@@ -84,14 +85,14 @@ class AbstractAesEncryptionAlgorithmTest {
     @Test
     void testGetSecureRandomWhenRequestHasSpecifiedASecureRandom() {
 
-        def alg = new TestAesEncryptionAlgorithm('foo', 'foo', 16, 16)
+        def alg = new TestAesEncryptionAlgorithm('foo', 'foo', 128, 128)
 
         def secureRandom = new SecureRandom()
 
-        def req = EncryptionRequests.builder()
+        def req = EncryptionRequests.symmetric()
                 .setAdditionalAuthenticatedData('foo'.getBytes())
                 .setInitializationVector('iv'.getBytes())
-                .setKey(alg.generateKey().getEncoded())
+                .setKey(alg.generateKey())
                 .setPlaintext('bar'.getBytes())
                 .setSecureRandom(secureRandom)
                 .build();
@@ -103,8 +104,8 @@ class AbstractAesEncryptionAlgorithmTest {
 
     static class TestAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
 
-        TestAesEncryptionAlgorithm(String name, String transformationString, int generatedIvLength, int requiredKeyLength) {
-            super(name, transformationString, generatedIvLength, requiredKeyLength)
+        TestAesEncryptionAlgorithm(String name, String transformationString, int generatedIvLengthInBits, int requiredKeyLengthInBits) {
+            super(name, transformationString, generatedIvLengthInBits, requiredKeyLengthInBits)
         }
 
         @Override

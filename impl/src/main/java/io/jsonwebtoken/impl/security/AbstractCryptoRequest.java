@@ -15,20 +15,23 @@
  */
 package io.jsonwebtoken.impl.security;
 
+import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.CryptoRequest;
 
-public abstract class AbstractCryptoRequest implements CryptoRequest {
+import java.security.Key;
 
-    private final byte[] key;
+public abstract class AbstractCryptoRequest<T extends Key> implements CryptoRequest<T> {
+
+    private final T key;
     private final byte[] iv;
 
-    public AbstractCryptoRequest(byte[] key, byte[] iv) {
-        this.key = key;
+    public AbstractCryptoRequest(T key, byte[] iv) {
+        this.key = Assert.notNull(key, "Key cannot be null.");
         this.iv = iv;
     }
 
     @Override
-    public byte[] getKey() {
+    public T getKey() {
         return this.key;
     }
 

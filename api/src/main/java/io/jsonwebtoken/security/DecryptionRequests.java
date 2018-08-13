@@ -17,12 +17,14 @@ package io.jsonwebtoken.security;
 
 import io.jsonwebtoken.lang.Classes;
 
+import javax.crypto.SecretKey;
+
 public final class DecryptionRequests {
 
     private DecryptionRequests() {
     }
 
-    public static DecryptionRequestBuilder builder() {
+    public static DecryptionRequestBuilder<SecretKey> symmetric() {
         return Classes.newInstance("io.jsonwebtoken.impl.security.DefaultDecryptionRequestBuilder");
     }
 }

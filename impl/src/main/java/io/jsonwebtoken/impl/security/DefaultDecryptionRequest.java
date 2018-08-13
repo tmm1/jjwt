@@ -18,11 +18,13 @@ package io.jsonwebtoken.impl.security;
 import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.DecryptionRequest;
 
-public class DefaultDecryptionRequest extends AbstractCryptoRequest implements DecryptionRequest {
+import java.security.Key;
+
+public class DefaultDecryptionRequest<T extends Key> extends AbstractCryptoRequest<T> implements DecryptionRequest<T> {
 
     private final byte[] ciphertext;
 
-    public DefaultDecryptionRequest(byte[] key, byte[] iv, byte[] ciphertext) {
+    public DefaultDecryptionRequest(T key, byte[] iv, byte[] ciphertext) {
         super(key, iv);
         Assert.notEmpty(ciphertext, "ciphertext cannot be null or empty.");
         this.ciphertext = ciphertext;

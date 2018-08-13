@@ -19,16 +19,18 @@ import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.DecryptionRequest;
 import io.jsonwebtoken.security.DecryptionRequestBuilder;
 
-import static io.jsonwebtoken.lang.Arrays.clean;
+import java.security.Key;
 
-public class DefaultDecryptionRequestBuilder implements DecryptionRequestBuilder {
+import static io.jsonwebtoken.lang.Arrays.*;
+
+public class DefaultDecryptionRequestBuilder<T extends Key> implements DecryptionRequestBuilder<T> {
 
     public static final String AAD_NEEDS_TAG_MSG = "If you specify additional authentication data during " +
             "decryption, you must also specify the authentication tag " +
             "computed during encryption.";
 
     private byte[] iv;
-    private byte[] key;
+    private T key;
     private byte[] ciphertext;
     private byte[] aad;
     private byte[] tag;
@@ -40,8 +42,8 @@ public class DefaultDecryptionRequestBuilder implements DecryptionRequestBuilder
     }
 
     @Override
-    public DecryptionRequestBuilder setKey(byte[] key) {
-        this.key = clean(key);
+    public DecryptionRequestBuilder setKey(T key) {
+        this.key = Assert.notNull(key, "Decryption key cannot be null.");
         return this;
     }
 
@@ -64,7 +66,8 @@ public class DefaultDecryptionRequestBuilder implements DecryptionRequestBuilder
     }
 
     @Override
-    public DecryptionRequest build() {
+    public DecryptionRequest<T> build() {
+        Assert.notNull(key, "Decryption key cannot be null.");
         Assert.notEmpty(ciphertext, "Ciphertext cannot be null or empty.");
 
         if (aad != null && tag == null) {
@@ -73,10 +76,10 @@ public class DefaultDecryptionRequestBuilder implements DecryptionRequestBuilder
         }
 
         if (aad != null || tag != null) {
-            return new DefaultAuthenticatedDecryptionRequest(key, iv, ciphertext, aad, tag);
+            return new DefaultAuthenticatedDecryptionRequest<T>(key, iv, ciphertext, aad, tag);
         }
 
-        return new DefaultDecryptionRequest(key, iv, ciphertext);
+        return new DefaultDecryptionRequest<T>(key, iv, ciphertext);
     }
 
 }

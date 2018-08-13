@@ -15,7 +15,9 @@
  */
 package io.jsonwebtoken.security;
 
-public interface DecryptionRequest extends CryptoRequest {
+import java.security.Key;
+
+public interface DecryptionRequest<T extends Key> extends CryptoRequest<T> {
 
     byte[] getCiphertext();
 

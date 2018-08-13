@@ -3,6 +3,9 @@ package io.jsonwebtoken.impl.security
 import io.jsonwebtoken.security.*
 import org.junit.Test
 
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
+
 import static org.junit.Assert.assertArrayEquals
 import static org.junit.Assert.assertTrue
 
@@ -14,6 +17,7 @@ class Aes128CbcHmacSha256Test {
     final byte[] K =
             [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
              0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f] as byte[]
+    final SecretKey KEY = new SecretKeySpec(K, "AES")
 
     final byte[] MAC_KEY =
             [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f] as byte[]
@@ -64,10 +68,10 @@ class Aes128CbcHmacSha256Test {
 
         def alg = EncryptionAlgorithms.A128CBC_HS256
 
-        EncryptionRequest request = EncryptionRequests.builder()
+        EncryptionRequest request = EncryptionRequests.symmetric()
                 .setAdditionalAuthenticatedData(A)
                 .setInitializationVector(IV)
-                .setKey(K)
+                .setKey(KEY)
                 .setPlaintext(P)
                 .build();
 
@@ -86,11 +90,11 @@ class Aes128CbcHmacSha256Test {
 
         // now test decryption:
 
-        def dreq = DecryptionRequests.builder()
+        def dreq = DecryptionRequests.symmetric()
                 .setAdditionalAuthenticatedData(A)
                 .setCiphertext(resultCiphertext)
                 .setInitializationVector(resultIv)
-                .setKey(K)
+                .setKey(KEY)
                 .setAuthenticationTag(resultTag)
                 .build();
 

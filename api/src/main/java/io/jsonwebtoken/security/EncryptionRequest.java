@@ -15,9 +15,10 @@
  */
 package io.jsonwebtoken.security;
 
+import java.security.Key;
 import java.security.SecureRandom;
 
-public interface EncryptionRequest extends CryptoRequest {
+public interface EncryptionRequest<T extends Key> extends CryptoRequest<T> {
 
     /**
      * Returns the {@code SecureRandom} to use when performing cryptographic operations when processing the request, or

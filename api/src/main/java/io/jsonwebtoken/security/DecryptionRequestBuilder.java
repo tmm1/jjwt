@@ -15,17 +15,19 @@
  */
 package io.jsonwebtoken.security;
 
-public interface DecryptionRequestBuilder {
+import java.security.Key;
 
-    DecryptionRequestBuilder setInitializationVector(byte[] iv);
+public interface DecryptionRequestBuilder<T extends Key> {
 
-    DecryptionRequestBuilder setKey(byte[] key);
+    DecryptionRequestBuilder<T> setInitializationVector(byte[] iv);
 
-    DecryptionRequestBuilder setCiphertext(byte[] plaintext);
+    DecryptionRequestBuilder<T> setKey(T key);
 
-    DecryptionRequestBuilder setAdditionalAuthenticatedData(byte[] aad);
+    DecryptionRequestBuilder<T> setCiphertext(byte[] plaintext);
 
-    DecryptionRequestBuilder setAuthenticationTag(byte[] tag);
+    DecryptionRequestBuilder<T> setAdditionalAuthenticatedData(byte[] aad);
 
-    DecryptionRequest build();
+    DecryptionRequestBuilder<T> setAuthenticationTag(byte[] tag);
+
+    DecryptionRequest<T> build();
 }

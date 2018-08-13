@@ -2,9 +2,11 @@ package io.jsonwebtoken.security;
 
 import io.jsonwebtoken.Named;
 
-public interface EncryptionAlgorithm extends Named {
+import java.security.Key;
 
-    EncryptionResult encrypt(EncryptionRequest request) throws CryptoException;
+public interface EncryptionAlgorithm<E extends Key, D extends Key> extends Named {
 
-    byte[] decrypt(DecryptionRequest request) throws CryptoException;
+    EncryptionResult encrypt(EncryptionRequest<E> request) throws CryptoException;
+
+    byte[] decrypt(DecryptionRequest<D> request) throws CryptoException;
 }

@@ -16,42 +16,23 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Arrays;
 
-import static io.jsonwebtoken.lang.Arrays.length;
+import static io.jsonwebtoken.lang.Arrays.*;
 
 public class HmacAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
 
-    protected static final String TRANSFORMATION_STRING = "AES/CBC/PKCS5Padding";
-
-    protected static int getRequiredKeyLength(SignatureAlgorithm alg) {
-        Assert.notNull(alg, "SignatureAlgorithm is required.");
-        switch (alg) {
-            case HS256:
-                return 32;
-            case HS384:
-                return 48;
-            case HS512:
-                return 64;
-            default:
-                String msg = "The JWT AES_CBC_HMAC_SHA2 family of algorithms only supports the " +
-                        SignatureAlgorithm.HS256.getValue() + ", " +
-                        SignatureAlgorithm.HS384.getValue() + ", and " +
-                        SignatureAlgorithm.HS512.getValue() + " SignatureAlgorithms.  See " +
-                        "https://tools.ietf.org/html/rfc7518#section-5.2.2.1 for more information.";
-                throw new IllegalArgumentException(msg);
-        }
-    }
+    private static final String TRANSFORMATION_STRING = "AES/CBC/PKCS5Padding";
 
     private final SignatureAlgorithm SIGALG;
 
     public HmacAesEncryptionAlgorithm(String name, SignatureAlgorithm sigAlg) {
-        super(name, TRANSFORMATION_STRING, AES_BLOCK_SIZE, getRequiredKeyLength(sigAlg));
+        super(name, TRANSFORMATION_STRING, AES_BLOCK_SIZE_BITS, sigAlg.getMinKeyLength());
         this.SIGALG = sigAlg;
     }
 
     @Override
     protected SecretKey doGenerateKey() throws Exception {
 
-        int subKeyLength = getRequiredKeyLength() / 2;
+        int subKeyLength = getRequiredKeyByteLength() / 2;
 
         byte[] macKeyBytes = generateHmacKeyBytes();
         Assert.notEmpty(macKeyBytes, "Generated HMAC key byte array cannot be null or empty.");
@@ -92,13 +73,13 @@ public class HmacAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
     }
 
     @Override
-    protected EncryptionResult doEncrypt(EncryptionRequest req) throws Exception {
+    protected EncryptionResult doEncrypt(EncryptionRequest<SecretKey> req) throws Exception {
 
         //Ensure IV:
         byte[] iv = ensureEncryptionIv(req);
 
         //Ensure Key:
-        byte[] keyBytes = assertKey(req);
+        byte[] keyBytes = assertKeyBytes(req);
 
         //See if there is any AAD:
         byte[] aad = getAAD(req); //can be null if request associated data does not exist or is empty
@@ -159,7 +140,7 @@ public class HmacAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
     }
 
     @Override
-    protected byte[] doDecrypt(DecryptionRequest dreq) throws Exception {
+    protected byte[] doDecrypt(DecryptionRequest<SecretKey> dreq) throws Exception {
 
         Assert.isInstanceOf(AuthenticatedDecryptionRequest.class, dreq,
                 "AES_CBC_HMAC_SHA2 encryption always authenticates and therefore requires that DecryptionRequests " +
@@ -172,7 +153,7 @@ public class HmacAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
         byte[] iv = assertDecryptionIv(req);
 
         //Ensure Key:
-        byte[] keyBytes = assertKey(req);
+        byte[] keyBytes = assertKeyBytes(req);
 
         //See if there is any AAD:
         byte[] aad = getAAD(req); //can be null if request associated data does not exist or is empty

@@ -19,6 +19,9 @@ import io.jsonwebtoken.impl.security.DefaultDecryptionRequest
 import io.jsonwebtoken.impl.security.DefaultDecryptionRequestBuilder
 import org.junit.Test
 
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
+
 import static org.junit.Assert.*
 
 class DefaultDecryptionRequestBuilderTest {
@@ -29,10 +32,14 @@ class DefaultDecryptionRequestBuilderTest {
         return data;
     }
 
+    private SecretKey generateKey() {
+        return new SecretKeySpec(generateData(), "AES")
+    }
+
     @Test
     void testWithoutAadAndWithoutTag() {
 
-        def key = generateData()
+        def key = generateKey()
         def iv = generateData()
         def ciphertext = generateData()
 
@@ -48,7 +55,9 @@ class DefaultDecryptionRequestBuilderTest {
     @Test
     void testAadWithoutTag() {
         try {
-            new DefaultDecryptionRequestBuilder().setCiphertext(generateData())
+            new DefaultDecryptionRequestBuilder()
+                    .setCiphertext(generateData())
+                    .setKey(generateKey())
                     .setAdditionalAuthenticatedData(generateData()).build()
             fail()
         } catch (IllegalArgumentException expected) {
@@ -63,9 +72,12 @@ class DefaultDecryptionRequestBuilderTest {
     }
 
     @Test
-    void testSetKeyWithEmptyArray() {
-        def b = new DefaultDecryptionRequestBuilder().setKey(new byte[0])
-        assertNull b.key
+    void testSetKeyWithNullKey() {
+        try {
+            new DefaultDecryptionRequestBuilder().setKey(null)
+            fail()
+        } catch (IllegalArgumentException expected) {
+        }
     }
 
     @Test

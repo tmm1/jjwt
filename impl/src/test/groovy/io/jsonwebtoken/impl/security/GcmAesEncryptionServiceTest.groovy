@@ -3,6 +3,9 @@ package io.jsonwebtoken.impl.security
 import io.jsonwebtoken.security.*
 import org.junit.Test
 
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
+
 import static org.junit.Assert.*
 
 class GcmAesEncryptionServiceTest {
@@ -10,6 +13,7 @@ class GcmAesEncryptionServiceTest {
     final byte[] K =
             [0xb1, 0xa1, 0xf4, 0x80, 0x54, 0x8f, 0xe1, 0x73, 0x3f, 0xb4, 0x3, 0xff, 0x6b, 0x9a, 0xd4, 0xf6,
              0x8a, 0x7, 0x6e, 0x5b, 0x70, 0x2e, 0x22, 0x69, 0x2f, 0x82, 0xcb, 0x2e, 0x7a, 0xea, 0x40, 0xfc] as byte[]
+    final SecretKey KEY = new SecretKeySpec(K, "AES")
 
     final byte[] P = "The true sign of intelligence is not knowledge but imagination.".getBytes("UTF-8")
 
@@ -37,10 +41,10 @@ class GcmAesEncryptionServiceTest {
 
         def alg = EncryptionAlgorithms.A256GCM
 
-        EncryptionRequest request = EncryptionRequests.builder()
+        EncryptionRequest request = EncryptionRequests.symmetric()
                 .setAdditionalAuthenticatedData(AAD)
                 .setInitializationVector(IV)
-                .setKey(K)
+                .setKey(KEY)
                 .setPlaintext(P)
                 .build();
 
@@ -59,11 +63,11 @@ class GcmAesEncryptionServiceTest {
 
         // now test decryption:
 
-        AuthenticatedDecryptionRequest decryptionRequest = DecryptionRequests.builder()
+        DecryptionRequest decryptionRequest = DecryptionRequests.symmetric()
                 .setAdditionalAuthenticatedData(AAD)
                 .setCiphertext(resultCiphertext)
                 .setInitializationVector(resultIv)
-                .setKey(K)
+                .setKey(KEY)
                 .setAuthenticationTag(resultTag)
                 .build();
 

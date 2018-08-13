@@ -160,7 +160,8 @@ class JwtsTest {
             Jwts.parser().parse('foo')
             fail()
         } catch (MalformedJwtException e) {
-            assertEquals e.message, "JWT strings must contain exactly 2 period characters. Found: 0"
+            assertEquals 'Invalid compact JWT string. JWSs must have exactly 2 period characters, ' +
+                    'JWEs must have exactly 4. Found: 0.', e.message
         }
     }
 
@@ -170,7 +171,8 @@ class JwtsTest {
             Jwts.parser().parse('.')
             fail()
         } catch (MalformedJwtException e) {
-            assertEquals e.message, "JWT strings must contain exactly 2 period characters. Found: 1"
+            assertEquals 'Invalid compact JWT string. JWSs must have exactly 2 period characters, ' +
+                    'JWEs must have exactly 4. Found: 1.', e.message
         }
     }
 
@@ -180,7 +182,7 @@ class JwtsTest {
             Jwts.parser().parse('..')
             fail()
         } catch (MalformedJwtException e) {
-            assertEquals e.message, "JWT string '..' is missing a body/payload."
+            assertEquals "Required JWS Protected Header is missing.", e.message
         }
     }
 
@@ -190,7 +192,7 @@ class JwtsTest {
             Jwts.parser().parse('foo..')
             fail()
         } catch (MalformedJwtException e) {
-            assertEquals e.message, "JWT string 'foo..' is missing a body/payload."
+            assertEquals "Required JWS Payload is missing.", e.message
         }
     }
 
@@ -200,7 +202,7 @@ class JwtsTest {
             Jwts.parser().parse('..bar')
             fail()
         } catch (MalformedJwtException e) {
-            assertEquals e.message, "JWT string '..bar' is missing a body/payload."
+            assertEquals "Required JWS Protected Header is missing.", e.message
         }
     }
 
@@ -210,7 +212,7 @@ class JwtsTest {
             Jwts.parser().parse('foo..bar')
             fail()
         } catch (MalformedJwtException e) {
-            assertEquals e.message, "JWT string 'foo..bar' is missing a body/payload."
+            assertEquals "Required JWS Payload is missing.", e.message
         }
     }
 
@@ -225,7 +227,7 @@ class JwtsTest {
 
     @Test
     void testConvenienceIssuer() {
-        String compact = Jwts.builder().setIssuer("Me").compact();
+        String compact = Jwts.builder().setIssuer("Me").compact()
         Claims claims = Jwts.parser().parse(compact).body as Claims
         assertEquals claims.getIssuer(), "Me"
 

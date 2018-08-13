@@ -1,7 +1,7 @@
 package io.jsonwebtoken.impl.security;
 
-import io.jsonwebtoken.security.DecryptionKeyResolver;
 import io.jsonwebtoken.JweHeader;
+import io.jsonwebtoken.security.DecryptionKeyResolver;
 
 import java.security.Key;
 

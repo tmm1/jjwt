@@ -25,6 +25,6 @@ class EncryptionRequestsTest {
 
     @Test
     void testBuilder() {
-        assertTrue EncryptionRequests.builder() instanceof DefaultEncryptionRequestBuilder
+        assertTrue EncryptionRequests.symmetric() instanceof DefaultEncryptionRequestBuilder
     }
 }

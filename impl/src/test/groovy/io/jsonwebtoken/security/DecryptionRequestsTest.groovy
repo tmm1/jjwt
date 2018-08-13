@@ -20,6 +20,6 @@ class DecryptionRequestsTest {
 
     @Test
     void testBuilder() {
-        assertTrue DecryptionRequests.builder() instanceof DefaultDecryptionRequestBuilder
+        assertTrue DecryptionRequests.symmetric() instanceof DefaultDecryptionRequestBuilder
     }
 }

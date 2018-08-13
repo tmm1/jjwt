@@ -18,14 +18,15 @@ package io.jsonwebtoken.impl.security;
 import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.AuthenticatedEncryptionRequest;
 
+import java.security.Key;
 import java.security.SecureRandom;
 
-public class DefaultAuthenticatedEncryptionRequest extends DefaultEncryptionRequest
-    implements AuthenticatedEncryptionRequest {
+public class DefaultAuthenticatedEncryptionRequest<T extends Key> extends DefaultEncryptionRequest<T>
+    implements AuthenticatedEncryptionRequest<T> {
 
     private final byte[] aad;
 
-    public DefaultAuthenticatedEncryptionRequest(SecureRandom secureRandom, byte[] key, byte[] iv, byte[] plaintext, byte[] aad) {
+    public DefaultAuthenticatedEncryptionRequest(SecureRandom secureRandom, T key, byte[] iv, byte[] plaintext, byte[] aad) {
         super(secureRandom, key, iv, plaintext);
         Assert.notEmpty(aad, "Additional Authenticated Data cannot be null or empty.");
         this.aad = aad;

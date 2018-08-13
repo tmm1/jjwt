@@ -19,57 +19,59 @@ import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.EncryptionRequest;
 import io.jsonwebtoken.security.EncryptionRequestBuilder;
 
+import java.security.Key;
 import java.security.SecureRandom;
 
-import static io.jsonwebtoken.lang.Arrays.clean;
+import static io.jsonwebtoken.lang.Arrays.*;
 
-public class DefaultEncryptionRequestBuilder implements EncryptionRequestBuilder {
+public class DefaultEncryptionRequestBuilder<T extends Key> implements EncryptionRequestBuilder<T> {
 
     private SecureRandom secureRandom;
     private byte[] iv;
-    private byte[] key;
+    private T key;
     private byte[] plaintext;
     private byte[] aad;
 
     @Override
-    public EncryptionRequestBuilder setSecureRandom(SecureRandom secureRandom) {
+    public EncryptionRequestBuilder<T> setSecureRandom(SecureRandom secureRandom) {
         this.secureRandom = secureRandom;
         return this;
     }
 
     @Override
-    public EncryptionRequestBuilder setInitializationVector(byte[] iv) {
+    public EncryptionRequestBuilder<T> setInitializationVector(byte[] iv) {
         this.iv = clean(iv);
         return this;
     }
 
     @Override
-    public EncryptionRequestBuilder setKey(byte[] key) {
-        this.key = clean(key);
+    public EncryptionRequestBuilder<T> setKey(T key) {
+        this.key = Assert.notNull(key, "Encryption key cannot be null.");
         return this;
     }
 
     @Override
-    public EncryptionRequestBuilder setPlaintext(byte[] plaintext) {
+    public EncryptionRequestBuilder<T> setPlaintext(byte[] plaintext) {
         Assert.notEmpty(plaintext, "Plaintext cannot be null or empty.");
         this.plaintext = plaintext;
         return this;
     }
 
     @Override
-    public EncryptionRequestBuilder setAdditionalAuthenticatedData(byte[] aad) {
+    public EncryptionRequestBuilder<T> setAdditionalAuthenticatedData(byte[] aad) {
         this.aad = clean(aad);
         return this;
     }
 
     @Override
-    public EncryptionRequest build() {
+    public EncryptionRequest<T> build() {
+        Assert.notNull(key, "Encryption key cannot be null.");
         Assert.notEmpty(plaintext, "Plaintext cannot be null or empty.");
 
         if (aad != null) {
-            return new DefaultAuthenticatedEncryptionRequest(secureRandom, key, iv, plaintext, aad);
+            return new DefaultAuthenticatedEncryptionRequest<>(secureRandom, key, iv, plaintext, aad);
         }
 
-        return new DefaultEncryptionRequest(secureRandom, key, iv, plaintext);
+        return new DefaultEncryptionRequest<>(secureRandom, key, iv, plaintext);
     }
 }

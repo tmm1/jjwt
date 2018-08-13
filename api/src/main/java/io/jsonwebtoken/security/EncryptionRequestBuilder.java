@@ -15,20 +15,21 @@
  */
 package io.jsonwebtoken.security;
 
+import java.security.Key;
 import java.security.SecureRandom;
 
-public interface EncryptionRequestBuilder {
+public interface EncryptionRequestBuilder<T extends Key> {
 
-    EncryptionRequestBuilder setSecureRandom(SecureRandom secureRandom);
+    EncryptionRequestBuilder<T> setSecureRandom(SecureRandom secureRandom);
 
-    EncryptionRequestBuilder setInitializationVector(byte[] iv);
+    EncryptionRequestBuilder<T> setInitializationVector(byte[] iv);
 
-    EncryptionRequestBuilder setKey(byte[] key);
+    EncryptionRequestBuilder<T> setKey(T key);
 
-    EncryptionRequestBuilder setPlaintext(byte[] plaintext);
+    EncryptionRequestBuilder<T> setPlaintext(byte[] plaintext);
 
-    EncryptionRequestBuilder setAdditionalAuthenticatedData(byte[] aad);
+    EncryptionRequestBuilder<T> setAdditionalAuthenticatedData(byte[] aad);
 
-    EncryptionRequest build();
+    EncryptionRequest<T> build();
 
 }

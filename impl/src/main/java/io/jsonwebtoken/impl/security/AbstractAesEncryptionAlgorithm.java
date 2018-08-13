@@ -5,9 +5,9 @@ import io.jsonwebtoken.security.AssociatedDataSource;
 import io.jsonwebtoken.security.CryptoException;
 import io.jsonwebtoken.security.CryptoRequest;
 import io.jsonwebtoken.security.DecryptionRequest;
-import io.jsonwebtoken.security.EncryptionAlgorithm;
 import io.jsonwebtoken.security.EncryptionRequest;
 import io.jsonwebtoken.security.EncryptionResult;
+import io.jsonwebtoken.security.SymmetricEncryptionAlgorithm;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -17,15 +17,14 @@ import java.security.Key;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 
-import static io.jsonwebtoken.lang.Arrays.length;
+import static io.jsonwebtoken.lang.Arrays.*;
 
-public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgorithm {
+public abstract class AbstractAesEncryptionAlgorithm implements SymmetricEncryptionAlgorithm {
 
-    public static final SecureRandom DEFAULT_RANDOM = new SecureRandom();
-
-    protected static final int AES_BLOCK_SIZE = 16;
+    protected static final int AES_BLOCK_SIZE_BYTES = 16;
+    protected static final int AES_BLOCK_SIZE_BITS = AES_BLOCK_SIZE_BYTES * Byte.SIZE;
     public static final String INVALID_GENERATED_IV_LENGTH =
-            "generatedIvLength must be a positive number <= " + AES_BLOCK_SIZE;
+            "generatedIvLengthInBits must be a positive number <= " + AES_BLOCK_SIZE_BITS;
 
     protected static final String DECRYPT_NO_IV = "This EncryptionAlgorithm implementation rejects decryption " +
             "requests that do not include initialization vectors.  AES ciphertext without an IV is weak and should " +
@@ -33,25 +32,29 @@ public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgori
 
     private final String name;
     private final String transformationString;
-    private final int generatedIvLength;
-    private final int requiredKeyLength;
+    private final int generatedIvByteLength;
+    private final int requiredKeyByteLength;
+    private final int requiredKeyBitLength;
 
-    public AbstractAesEncryptionAlgorithm(String name, String transformationString, int generatedIvLength, int requiredKeyLength) {
+    public AbstractAesEncryptionAlgorithm(String name, String transformationString, int generatedIvLengthInBits, int requiredKeyLengthInBits) {
 
         Assert.hasText(name, "Name cannot be null or empty.");
         this.name = name;
 
         this.transformationString = transformationString;
 
-        Assert.isTrue(generatedIvLength > 0 && generatedIvLength <= AES_BLOCK_SIZE, INVALID_GENERATED_IV_LENGTH);
-        this.generatedIvLength = generatedIvLength;
+        Assert.isTrue(generatedIvLengthInBits > 0 && generatedIvLengthInBits <= AES_BLOCK_SIZE_BITS, INVALID_GENERATED_IV_LENGTH);
+        Assert.isTrue((generatedIvLengthInBits % Byte.SIZE) == 0, "generatedIvLengthInBits must be evenly divisible by 8.");
+        this.generatedIvByteLength = generatedIvLengthInBits / Byte.SIZE;
 
-        Assert.isTrue(requiredKeyLength > 0, "requiredKeyLength must be greater than zero.");
-        this.requiredKeyLength = requiredKeyLength;
+        Assert.isTrue(requiredKeyLengthInBits > 0, "requiredKeyLengthInBits must be greater than zero.");
+        Assert.isTrue((requiredKeyLengthInBits % Byte.SIZE) == 0, "requiredKeyLengthInBits must be evenly divisible by 8.");
+        this.requiredKeyBitLength = requiredKeyLengthInBits;
+        this.requiredKeyByteLength = requiredKeyLengthInBits / Byte.SIZE;
     }
 
-    public int getRequiredKeyLength() {
-        return this.requiredKeyLength;
+    public int getRequiredKeyByteLength() {
+        return this.requiredKeyByteLength;
     }
 
     public SecretKey generateKey() {
@@ -64,8 +67,7 @@ public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgori
 
     protected SecretKey doGenerateKey() throws Exception {
         KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-        int generatedKeyLength = getRequiredKeyLength();
-        keyGenerator.init(generatedKeyLength * Byte.SIZE);
+        keyGenerator.init(this.requiredKeyBitLength);
         return keyGenerator.generateKey();
     }
 
@@ -90,7 +92,7 @@ public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgori
     }
 
     @Override
-    public EncryptionResult encrypt(EncryptionRequest req) throws CryptoException {
+    public EncryptionResult encrypt(EncryptionRequest<SecretKey> req) throws CryptoException {
         try {
             Assert.notNull(req, "EncryptionRequest cannot be null.");
             return doEncrypt(req);
@@ -101,33 +103,38 @@ public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgori
     }
 
     protected byte[] generateInitializationVector(SecureRandom random) {
-        byte[] iv = new byte[this.generatedIvLength];
+        byte[] iv = new byte[this.generatedIvByteLength];
         random.nextBytes(iv);
         return iv;
     }
 
-    protected SecureRandom getSecureRandom(EncryptionRequest request) {
+    protected SecureRandom getSecureRandom(EncryptionRequest<SecretKey> request) {
         SecureRandom random = request.getSecureRandom();
-        return random != null ? random : DEFAULT_RANDOM;
+        return random != null ? random : Randoms.secureRandom();
     }
 
-    protected byte[] assertKey(CryptoRequest request) {
-        byte[] key = request.getKey();
+    protected byte[] assertKeyBytes(CryptoRequest<SecretKey> request) {
+        SecretKey key = assertKey(request);
+        return key.getEncoded();
+    }
+
+    protected SecretKey assertKey(CryptoRequest<SecretKey> request) {
+        SecretKey key = request.getKey();
         return assertKeyLength(key);
     }
 
-    protected byte[] assertKeyLength(byte[] key) {
-        int length = length(key);
-        if (length != requiredKeyLength) {
+    protected SecretKey assertKeyLength(SecretKey key) {
+        int length = length(key.getEncoded());
+        if (length != requiredKeyByteLength) {
             throw new CryptoException("The " + getName() + " algorithm requires that keys have a key length of " +
-                    "(preferrably secure-random) " + requiredKeyLength + " bytes (" +
-                    requiredKeyLength * Byte.SIZE + " bits). The provided key has a length of " +
-                    length + " bytes (" + length * Byte.SIZE + " bits).");
+                    "(preferably secure-random) " + requiredKeyBitLength + " bits (" +
+                requiredKeyByteLength + " bytes). The provided key has a length of " + length * Byte.SIZE
+                    + " bits (" + length + " bytes).");
         }
         return key;
     }
 
-    protected byte[] ensureEncryptionIv(EncryptionRequest req) {
+    protected byte[] ensureEncryptionIv(EncryptionRequest<SecretKey> req) {
 
         final SecureRandom random = getSecureRandom(req);
 
@@ -141,13 +148,13 @@ public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgori
         return iv;
     }
 
-    protected byte[] assertDecryptionIv(DecryptionRequest req) throws IllegalArgumentException {
+    protected byte[] assertDecryptionIv(DecryptionRequest<SecretKey> req) throws IllegalArgumentException {
         byte[] iv = req.getInitializationVector();
         Assert.notEmpty(iv, DECRYPT_NO_IV);
         return iv;
     }
 
-    protected byte[] getAAD(CryptoRequest request) {
+    protected byte[] getAAD(CryptoRequest<SecretKey> request) {
         if (request instanceof AssociatedDataSource) {
             byte[] aad = ((AssociatedDataSource) request).getAssociatedData();
             return io.jsonwebtoken.lang.Arrays.clean(aad);
@@ -155,11 +162,11 @@ public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgori
         return null;
     }
 
-    protected abstract EncryptionResult doEncrypt(EncryptionRequest req) throws Exception;
+    protected abstract EncryptionResult doEncrypt(EncryptionRequest<SecretKey> req) throws Exception;
 
 
     @Override
-    public byte[] decrypt(DecryptionRequest req) throws CryptoException {
+    public byte[] decrypt(DecryptionRequest<SecretKey> req) throws CryptoException {
         try {
             Assert.notNull(req, "DecryptionRequest cannot be null.");
             return doDecrypt(req);
@@ -169,5 +176,5 @@ public abstract class AbstractAesEncryptionAlgorithm implements EncryptionAlgori
         }
     }
 
-    protected abstract byte[] doDecrypt(DecryptionRequest req) throws Exception;
+    protected abstract byte[] doDecrypt(DecryptionRequest<SecretKey> req) throws Exception;
 }

@@ -38,14 +38,14 @@ class EncryptionAlgorithmsTest {
     @Test
     void testWithoutAad() {
 
-        for (EncryptionAlgorithm alg : EncryptionAlgorithms.values()) {
+        for (EncryptionAlgorithm alg : EncryptionAlgorithms.symmetric()) {
 
             assert alg instanceof AbstractAesEncryptionAlgorithm
 
             def skey = alg.generateKey()
             def key = skey.getEncoded()
 
-            def request = EncryptionRequests.builder().setKey(key).setPlaintext(PLAINTEXT_BYTES).build()
+            def request = EncryptionRequests.symmetric().setKey(key).setPlaintext(PLAINTEXT_BYTES).build()
 
             def result = alg.encrypt(request);
             assert result instanceof AuthenticatedEncryptionResult
@@ -59,7 +59,7 @@ class EncryptionAlgorithmsTest {
                 assertEquals(ciphertext.length, PLAINTEXT_BYTES.length)
             }
 
-            def dreq = DecryptionRequests.builder()
+            def dreq = DecryptionRequests.symmetric()
                     .setKey(key)
                     .setInitializationVector(result.getInitializationVector())
                     .setAuthenticationTag(result.getAuthenticationTag())
@@ -75,14 +75,14 @@ class EncryptionAlgorithmsTest {
     @Test
     void testWithAad() {
 
-        for (EncryptionAlgorithm alg : EncryptionAlgorithms.values()) {
+        for (EncryptionAlgorithm alg : EncryptionAlgorithms.symmetric()) {
 
             assert alg instanceof AbstractAesEncryptionAlgorithm
 
             def skey = alg.generateKey()
             def key = skey.getEncoded()
 
-            def request = EncryptionRequests.builder()
+            def request = EncryptionRequests.symmetric()
                     .setAdditionalAuthenticatedData(AAD_BYTES)
                     .setKey(key)
                     .setPlaintext(PLAINTEXT_BYTES)
@@ -99,7 +99,7 @@ class EncryptionAlgorithmsTest {
                 assertEquals(ciphertext.length, PLAINTEXT_BYTES.length)
             }
 
-            def dreq = DecryptionRequests.builder()
+            def dreq = DecryptionRequests.symmetric()
                     .setAdditionalAuthenticatedData(AAD_BYTES)
                     .setKey(key)
                     .setInitializationVector(result.getInitializationVector())

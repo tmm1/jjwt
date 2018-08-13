@@ -18,14 +18,16 @@ package io.jsonwebtoken.impl.security;
 import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.AuthenticatedDecryptionRequest;
 
-public class DefaultAuthenticatedDecryptionRequest extends DefaultDecryptionRequest
-        implements AuthenticatedDecryptionRequest {
+import java.security.Key;
+
+public class DefaultAuthenticatedDecryptionRequest<T extends Key> extends DefaultDecryptionRequest<T>
+        implements AuthenticatedDecryptionRequest<T> {
 
     private final byte[] aad;
 
     private final byte[] tag;
 
-    public DefaultAuthenticatedDecryptionRequest(byte[] key, byte[] iv, byte[] ciphertext, byte[] aad, byte[] tag) {
+    public DefaultAuthenticatedDecryptionRequest(T key, byte[] iv, byte[] ciphertext, byte[] aad, byte[] tag) {
         super(key, iv, ciphertext);
         Assert.notEmpty(tag, "Authentication tag cannot be null or empty.");
         this.aad = aad;

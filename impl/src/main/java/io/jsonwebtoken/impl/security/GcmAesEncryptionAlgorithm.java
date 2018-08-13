@@ -10,7 +10,6 @@ import io.jsonwebtoken.security.EncryptionResult;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.security.spec.AlgorithmParameterSpec;
 
 public class GcmAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
@@ -21,18 +20,18 @@ public class GcmAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
         RuntimeEnvironment.enableBouncyCastleIfPossible();
     }
 
-    private static final int GCM_IV_SIZE = 12; // https://tools.ietf.org/html/rfc7518#section-5.3
+    private static final int GCM_IV_SIZE_BITS = 96; // https://tools.ietf.org/html/rfc7518#section-5.3
     private static final String TRANSFORMATION_STRING = "AES/GCM/NoPadding";
 
-    public GcmAesEncryptionAlgorithm(String name, int requiredKeyLength) {
-        super(name, TRANSFORMATION_STRING, GCM_IV_SIZE, requiredKeyLength);
+    public GcmAesEncryptionAlgorithm(String name, int requiredKeyLengthInBits) {
+        super(name, TRANSFORMATION_STRING, GCM_IV_SIZE_BITS, requiredKeyLengthInBits);
         //Standard AES only supports 128, 192, and 256 key lengths, respectively:
-        Assert.isTrue(requiredKeyLength == 16 || requiredKeyLength == 24 || requiredKeyLength == 32, "Invalid AES Key length.");
+        Assert.isTrue(requiredKeyLengthInBits == 128 || requiredKeyLengthInBits == 192 || requiredKeyLengthInBits == 256, "Invalid AES Key length.");
     }
 
     @Override
     protected AlgorithmParameterSpec createAlgorithmParameterSpec(byte[] iv) {
-        return new GCMParameterSpec(AES_BLOCK_SIZE * Byte.SIZE, iv);
+        return new GCMParameterSpec(AES_BLOCK_SIZE_BITS, iv);
     }
 
     @Override
@@ -42,12 +41,10 @@ public class GcmAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
         byte[] iv = ensureEncryptionIv(req);
 
         //Ensure Key:
-        byte[] keyBytes = assertKey(req);
+        final SecretKey encryptionKey = assertKey(req);
 
         //See if there is any AAD:
         byte[] aad = getAAD(req); //can be null if request associated data does not exist or is empty
-
-        final SecretKey encryptionKey = new SecretKeySpec(keyBytes, "AES");
 
         Cipher cipher = createCipher(Cipher.ENCRYPT_MODE, encryptionKey, iv);
         if (aad != null) {
@@ -61,13 +58,13 @@ public class GcmAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
         // represent this appropriately:
         byte[] taggedCiphertext = ciphertext;
 
-        // Now separate the tag from the ciphertext (tag has a length of AES_BLOCK_SIZE):
-        int ciphertextLength = taggedCiphertext.length - AES_BLOCK_SIZE;
+        // Now separate the tag from the ciphertext (tag has a length of AES_BLOCK_SIZE_BITS):
+        int ciphertextLength = taggedCiphertext.length - AES_BLOCK_SIZE_BYTES;
         ciphertext = new byte[ciphertextLength];
         System.arraycopy(taggedCiphertext, 0, ciphertext, 0, ciphertextLength);
 
-        byte[] tag = new byte[AES_BLOCK_SIZE];
-        System.arraycopy(taggedCiphertext, ciphertextLength, tag, 0, AES_BLOCK_SIZE);
+        byte[] tag = new byte[AES_BLOCK_SIZE_BYTES];
+        System.arraycopy(taggedCiphertext, ciphertextLength, tag, 0, AES_BLOCK_SIZE_BYTES);
 
         return new DefaultAuthenticatedEncryptionResult(iv, ciphertext, tag);
     }
@@ -86,12 +83,10 @@ public class GcmAesEncryptionAlgorithm extends AbstractAesEncryptionAlgorithm {
         byte[] iv = assertDecryptionIv(req);
 
         //Ensure Key:
-        byte[] keyBytes = assertKey(req);
+        final SecretKey key = assertKey(req);
 
         //See if there is any AAD:
         byte[] aad = getAAD(req); //can be null if request associated data does not exist or is empty
-
-        final SecretKey key = new SecretKeySpec(keyBytes, "AES");
 
         final byte[] ciphertext = req.getCiphertext();
 

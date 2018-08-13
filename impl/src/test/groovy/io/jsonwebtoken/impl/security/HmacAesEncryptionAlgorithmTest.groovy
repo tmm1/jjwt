@@ -4,54 +4,37 @@ import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.*
 import org.junit.Test
 
+import javax.crypto.SecretKey
+
 import static org.junit.Assert.assertArrayEquals
 import static org.junit.Assert.fail
 
 class HmacAesEncryptionAlgorithmTest {
 
     @Test
-    void testGetRequiredKeyLengthWithNullSignatureAlgorithm() {
-        try {
-            HmacAesEncryptionAlgorithm.getRequiredKeyLength(null)
-            fail()
-        } catch (IllegalArgumentException expected) {
-        }
-    }
-
-    @Test
-    void testGetRequiredKeyLengthWithInvalidSignatureAlgorithm() {
-        try {
-            HmacAesEncryptionAlgorithm.getRequiredKeyLength(SignatureAlgorithm.ES256)
-            fail()
-        } catch (IllegalArgumentException expected) {
-        }
-    }
-
-    @Test
     void testGenerateHmacKeyBytesWithExactNumExpectedBytes() {
 
-        int hmacKeySize = EncryptionAlgorithms.A128CBC_HS256.getRequiredKeyLength() / 2;
+        int hmacKeySize = EncryptionAlgorithms.A128CBC_HS256.getRequiredKeyByteLength() / 2;
 
         def alg = new TestHmacAesEncryptionAlgorithm() {
             @Override
             protected byte[] generateHmacKeyBytes() {
                 byte[] bytes = new byte[hmacKeySize]
-                AbstractAesEncryptionAlgorithm.DEFAULT_RANDOM.nextBytes(bytes);
+                Randoms.secureRandom().nextBytes(bytes);
                 return bytes;
             }
         }
 
-        def skey = alg.generateKey()
-        def key = skey.getEncoded()
+        SecretKey key = alg.generateKey()
 
         def plaintext = "Hello World! Nice to meet you!".getBytes("UTF-8")
 
-        def request = EncryptionRequests.builder().setKey(key).setPlaintext(plaintext).build()
+        def request = EncryptionRequests.symmetric().setKey(key).setPlaintext(plaintext).build()
 
         def result = alg.encrypt(request);
         assert result instanceof AuthenticatedEncryptionResult
 
-        def dreq = DecryptionRequests.builder()
+        def dreq = DecryptionRequests.symmetric()
                 .setKey(key)
                 .setInitializationVector(result.getInitializationVector())
                 .setAuthenticationTag(result.getAuthenticationTag())
@@ -66,14 +49,14 @@ class HmacAesEncryptionAlgorithmTest {
     @Test
     void testGenerateHmacKeyBytesWithInsufficientNumExpectedBytes() {
 
-        int hmacKeySize = EncryptionAlgorithms.A128CBC_HS256.getRequiredKeyLength() / 2;
+        int hmacKeySize = EncryptionAlgorithms.A128CBC_HS256.getRequiredKeyByteLength() / 2;
 
         def alg = new TestHmacAesEncryptionAlgorithm() {
             @Override
             protected byte[] generateHmacKeyBytes() {
                 byte[] bytes = new byte[hmacKeySize - 1]
-                AbstractAesEncryptionAlgorithm.DEFAULT_RANDOM.nextBytes(bytes);
-                return bytes;
+                Randoms.secureRandom().nextBytes(bytes)
+                return bytes
             }
         }
 
@@ -89,12 +72,11 @@ class HmacAesEncryptionAlgorithmTest {
 
         def alg = EncryptionAlgorithms.A128CBC_HS256;
 
-        def skey = alg.generateKey()
-        def key = skey.getEncoded()
+        SecretKey key = alg.generateKey()
 
         def plaintext = "Hello World! Nice to meet you!".getBytes("UTF-8")
 
-        def request = EncryptionRequests.builder().setKey(key).setPlaintext(plaintext).build()
+        def request = EncryptionRequests.symmetric().setKey(key).setPlaintext(plaintext).build()
 
         def result = alg.encrypt(request);
         assert result instanceof AuthenticatedEncryptionResult
@@ -104,9 +86,9 @@ class HmacAesEncryptionAlgorithmTest {
         //fake it:
 
         def fakeTag = new byte[realTag.length]
-        AbstractAesEncryptionAlgorithm.DEFAULT_RANDOM.nextBytes(fakeTag)
+        Randoms.secureRandom().nextBytes(fakeTag)
 
-        def dreq = DecryptionRequests.builder()
+        def dreq = DecryptionRequests.symmetric()
                 .setKey(key)
                 .setInitializationVector(result.getInitializationVector())
                 .setAuthenticationTag(fakeTag)

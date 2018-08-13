@@ -18,7 +18,7 @@ package io.jsonwebtoken.impl.security;
 import io.jsonwebtoken.lang.Assert;
 import io.jsonwebtoken.security.EncryptionResult;
 
-import static io.jsonwebtoken.lang.Arrays.length;
+import static io.jsonwebtoken.lang.Arrays.*;
 
 public class DefaultEncryptionResult implements EncryptionResult {
 
